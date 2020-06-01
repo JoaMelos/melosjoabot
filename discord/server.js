@@ -1,0 +1,76 @@
+ const discord = require("discord.js")
+const client = new discord.Client({ disableEveryone: true, disabledEvents: ["TYPING_START"] });
+const { readdirSync } = require("fs");
+const { join } = require("path");
+const { TOKEN, PREFIX } = require("./config.json")
+client.on("ready", () => {
+  console.log('ready')
+  client.user.setActivity("music bot")
+  client.on("message", async message => {
+    if (message.author.bot) return;
+    if (message.content.indexOf(PREFIX) !== 0) return;
+    const args = message.content
+      .slice(PREFIX.length)
+      .trim()
+      .split(/ +/g);
+    const command = args.shift().toLowerCase();
+    const { Permissions } = require("discord.js");
+    const permissions = new Permissions([
+      "MANAGE_CHANNELS",
+      "EMBED_LINKS",
+      "ATTACH_FILES",
+      "READ_MESSAGE_HISTORY",
+      "MANAGE_ROLES",
+      "ADMINISTRATOR",
+      "BAN_MEMBERS",
+      "KICK_MEMBERS",
+      "MANAGE_GUILD",
+      "VIEW_AUDIT_LOG",
+      "MANAGE_NICKNAMES",
+      "MANAGE_WEBHOOKS",
+      "MANAGE_MESSAGES",
+      "ADD_REACTIONS",
+      "CONNECT",
+      "SPEAK",
+      "MUTE_MEMBERS",
+      "DEAFEN_MEMBERS",
+      "SEND_MESSAGES",
+      "CREATE_INSTANT_INVITE"
+    ]);
+
+client.on("warn", info => console.log(info));
+client.on("error", console.error)
+client.commands = new discord.Collection()
+client.PREFIX = PREFIX
+client.queue = new Map();
+const cmdFiles = readdirSync(join(__dirname, "commands")).filter(file => file.endsWith(".js"))
+for (const file of cmdFiles) {
+  const command = require(join(__dirname, "commands", file))
+  client.commands.set(command.name, command)
+} 
+client.on("message", message => {
+   if (message.author.bot) return;
+  if (!message.guild) return;
+  if(message.content.startsWith(PREFIX)) { 
+    const args = message.content.slice(PREFIX.length).trim().split(/ +/) 
+    const command = args.shift().toLowerCase();
+    if(!client.commands.has(command)) {
+      return;
+    } 
+    
+  try  { 
+      client.commands.get(command).execute(client, message, args)
+    } catch (err) { 
+      console.log(err)
+      message.reply("I am getting error on using this command")
+    }
+    
+  }
+  
+})
+});
+
+
+
+
+client.login(TOKEN);
